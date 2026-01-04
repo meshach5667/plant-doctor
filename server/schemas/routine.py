@@ -17,8 +17,14 @@ class CheckType(str, Enum):
     PRUNING = "pruning"
     PEST_CHECK = "pest_check"
     DISEASE_CHECK = "disease_check"
-    REPOTTING = "repotting"
+    SOIL_CHECK = "soil_check"
     GENERAL = "general"
+
+
+class CropType(str, Enum):
+    TOMATO = "tomato"
+    POTATO = "potato"
+    PEPPER = "pepper"
 
 
 class RoutineCheckBase(BaseModel):
@@ -26,7 +32,7 @@ class RoutineCheckBase(BaseModel):
     description: Optional[str] = None
     frequency: FrequencyType = FrequencyType.WEEKLY
     check_type: CheckType = CheckType.GENERAL
-    plant_id: Optional[int] = None
+    crop_type: CropType  # Which crop this check is for
     notes: Optional[str] = None
 
 
@@ -44,12 +50,18 @@ class RoutineCheckUpdate(BaseModel):
     notes: Optional[str] = None
 
 
-class RoutineCheckResponse(RoutineCheckBase):
+class RoutineCheckResponse(BaseModel):
     id: int
+    title: str
+    description: Optional[str] = None
+    frequency: FrequencyType
+    check_type: str
+    crop_type: str
     next_check_date: datetime
     last_check_date: Optional[datetime] = None
     is_active: bool
     user_id: int
+    notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
@@ -63,18 +75,18 @@ class RoutineCheckComplete(BaseModel):
 
 
 class UpcomingChecks(BaseModel):
-    """List of upcoming routine checks"""
+    """List of upcoming routine checks grouped by urgency"""
     due_today: List[RoutineCheckResponse] = []
     due_this_week: List[RoutineCheckResponse] = []
     overdue: List[RoutineCheckResponse] = []
 
 
 class RoutineNotification(BaseModel):
-    """Notification payload for routine checks"""
+    """Notification payload for routine checks - for mobile push notifications"""
     check_id: int
     title: str
     message: str
     check_type: str
-    plant_name: Optional[str] = None
+    crop_type: str
     due_date: datetime
     is_overdue: bool = False

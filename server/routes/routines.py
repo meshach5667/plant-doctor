@@ -9,10 +9,11 @@ from schemas import (
     RoutineCheckResponse,
     RoutineCheckComplete,
     UpcomingChecks,
-    RoutineNotification
+    RoutineNotification,
+    CropType
 )
 from routes.dependencies import get_current_user
-from models import User
+from models import User, CropType as ModelCropType
 from services import get_routine_service
 
 router = APIRouter(prefix="/routines", tags=["Routine Checks"])
@@ -24,7 +25,7 @@ async def create_routine_check(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new routine check"""
+    """Create a custom routine check for a specific crop"""
     routine_service = get_routine_service(db)
     check = routine_service.create_routine_check(current_user.id, check_data)
     return check
@@ -33,28 +34,40 @@ async def create_routine_check(
 @router.get("/", response_model=List[RoutineCheckResponse])
 async def get_routine_checks(
     active_only: bool = True,
-    plant_id: Optional[int] = None,
+    crop_type: Optional[CropType] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all routine checks for current user"""
+    """
+    Get all routine checks for current user.
+    
+    Filter by crop_type to only see checks for specific crops (e.g., tomato only).
+    """
     routine_service = get_routine_service(db)
+    model_crop_type = ModelCropType(crop_type.value) if crop_type else None
     checks = routine_service.get_user_routine_checks(
         current_user.id, 
         active_only=active_only,
-        plant_id=plant_id
+        crop_type=model_crop_type
     )
     return checks
 
 
 @router.get("/upcoming", response_model=UpcomingChecks)
 async def get_upcoming_checks(
+    crop_type: Optional[CropType] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get upcoming routine checks organized by urgency"""
+    """
+    Get upcoming routine checks organized by urgency.
+    
+    Returns checks grouped into: overdue, due_today, due_this_week.
+    Filter by crop_type for crop-specific checks only.
+    """
     routine_service = get_routine_service(db)
-    return routine_service.get_upcoming_checks(current_user.id)
+    model_crop_type = ModelCropType(crop_type.value) if crop_type else None
+    return routine_service.get_upcoming_checks(current_user.id, crop_type=model_crop_type)
 
 
 @router.get("/notifications", response_model=List[RoutineNotification])
@@ -63,10 +76,10 @@ async def get_notifications(
     db: Session = Depends(get_db)
 ):
     """
-    Get notification payloads for due and overdue checks.
+    📱 Get notification payloads for due and overdue checks.
     
     This endpoint is designed to be called periodically by the mobile app
-    to check for routine checks that need attention.
+    to check for routine checks that need attention. Use this for push notifications!
     """
     routine_service = get_routine_service(db)
     return routine_service.get_notifications(current_user.id)

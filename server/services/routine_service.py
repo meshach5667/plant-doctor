@@ -3,11 +3,10 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 import logging
 
-from models import RoutineCheck, Plant, User, FrequencyType
+from models import RoutineCheck, FarmCrop, User, FrequencyType, CropType
 from schemas import (
     RoutineCheckCreate,
     RoutineCheckUpdate,
-    RoutineCheckResponse,
     UpcomingChecks,
     RoutineNotification
 )
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class RoutineCheckService:
-    """Service for managing routine plant checks"""
+    """Service for managing routine farm checks based on crops"""
     
     def __init__(self, db: Session):
         self.db = db
@@ -32,9 +31,9 @@ class RoutineCheckService:
             description=check_data.description,
             frequency=check_data.frequency,
             check_type=check_data.check_type,
+            crop_type=check_data.crop_type,
             next_check_date=check_data.next_check_date,
             notes=check_data.notes,
-            plant_id=check_data.plant_id,
             user_id=user_id,
             is_active=True
         )
@@ -54,16 +53,16 @@ class RoutineCheckService:
         self, 
         user_id: int, 
         active_only: bool = True,
-        plant_id: Optional[int] = None
+        crop_type: Optional[CropType] = None
     ) -> List[RoutineCheck]:
-        """Get all routine checks for a user"""
+        """Get all routine checks for a user, optionally filtered by crop type"""
         query = self.db.query(RoutineCheck).filter(RoutineCheck.user_id == user_id)
         
         if active_only:
             query = query.filter(RoutineCheck.is_active == True)
         
-        if plant_id:
-            query = query.filter(RoutineCheck.plant_id == plant_id)
+        if crop_type:
+            query = query.filter(RoutineCheck.crop_type == crop_type)
         
         return query.order_by(RoutineCheck.next_check_date).all()
     
@@ -136,15 +135,15 @@ class RoutineCheckService:
         elif frequency == FrequencyType.MONTHLY:
             return now + timedelta(days=30)
         else:
-            return now + timedelta(weeks=1)  # Default to weekly
+            return now + timedelta(weeks=1)
     
-    def get_upcoming_checks(self, user_id: int) -> UpcomingChecks:
+    def get_upcoming_checks(self, user_id: int, crop_type: Optional[CropType] = None) -> UpcomingChecks:
         """Get upcoming checks organized by urgency"""
         now = datetime.utcnow()
         today_end = now.replace(hour=23, minute=59, second=59)
         week_end = now + timedelta(days=7)
         
-        active_checks = self.get_user_routine_checks(user_id, active_only=True)
+        active_checks = self.get_user_routine_checks(user_id, active_only=True, crop_type=crop_type)
         
         due_today = []
         due_this_week = []
@@ -165,54 +164,44 @@ class RoutineCheckService:
         )
     
     def get_notifications(self, user_id: int) -> List[RoutineNotification]:
-        """Get notification payloads for due checks"""
+        """Get notification payloads for due checks - for mobile push notifications"""
         upcoming = self.get_upcoming_checks(user_id)
         notifications = []
         
         # Add overdue notifications (highest priority)
         for check in upcoming.overdue:
-            plant_name = None
-            if check.plant_id:
-                plant = self.db.query(Plant).filter(Plant.id == check.plant_id).first()
-                plant_name = plant.name if plant else None
-            
             notifications.append(RoutineNotification(
                 check_id=check.id,
-                title=f"Overdue: {check.title}",
-                message=f"Your {check.check_type} check was due on {check.next_check_date.strftime('%Y-%m-%d')}",
+                title=f"⚠️ Overdue: {check.title}",
+                message=f"Your {check.check_type} check for {check.crop_type.value} was due on {check.next_check_date.strftime('%Y-%m-%d')}",
                 check_type=check.check_type,
-                plant_name=plant_name,
+                crop_type=check.crop_type.value,
                 due_date=check.next_check_date,
                 is_overdue=True
             ))
         
         # Add due today notifications
         for check in upcoming.due_today:
-            plant_name = None
-            if check.plant_id:
-                plant = self.db.query(Plant).filter(Plant.id == check.plant_id).first()
-                plant_name = plant.name if plant else None
-            
             notifications.append(RoutineNotification(
                 check_id=check.id,
-                title=f"Due Today: {check.title}",
-                message=f"Time for your {check.check_type} check!",
+                title=f"📋 Due Today: {check.title}",
+                message=f"Time for your {check.check_type} check on your {check.crop_type.value} farm!",
                 check_type=check.check_type,
-                plant_name=plant_name,
+                crop_type=check.crop_type.value,
                 due_date=check.next_check_date,
                 is_overdue=False
             ))
         
         return notifications
     
-    def create_default_checks_for_plant(
+    def create_default_checks_for_crop(
         self, 
         user_id: int, 
-        plant_id: int, 
-        plant_type: str
+        crop_type: CropType,
+        farm_crop_id: Optional[int] = None
     ) -> List[RoutineCheck]:
-        """Create default routine checks for a new plant"""
-        default_checks = self._get_default_checks_for_plant_type(plant_type)
+        """Create default routine checks when user adds a crop to their farm"""
+        default_checks = self._get_default_checks_for_crop_type(crop_type)
         created_checks = []
         
         for check_data in default_checks:
@@ -221,8 +210,9 @@ class RoutineCheckService:
                 description=check_data["description"],
                 frequency=check_data["frequency"],
                 check_type=check_data["check_type"],
+                crop_type=crop_type,
                 next_check_date=datetime.utcnow() + timedelta(days=check_data["initial_delay_days"]),
-                plant_id=plant_id,
+                farm_crop_id=farm_crop_id,
                 user_id=user_id,
                 is_active=True
             )
@@ -235,35 +225,35 @@ class RoutineCheckService:
         
         return created_checks
     
-    def _get_default_checks_for_plant_type(self, plant_type: str) -> List[dict]:
-        """Get default routine checks based on plant type"""
-        plant_type_lower = plant_type.lower()
+    def _get_default_checks_for_crop_type(self, crop_type: CropType) -> List[dict]:
+        """Get default routine checks based on crop type"""
+        crop_name = crop_type.value.capitalize()
         
-        # Common checks for all plants
+        # Common checks for all crops
         common_checks = [
             {
-                "title": f"Water {plant_type}",
-                "description": f"Check soil moisture and water your {plant_type} if needed",
+                "title": f"Water {crop_name} crops",
+                "description": f"Check soil moisture and water your {crop_name} plants if needed",
                 "frequency": FrequencyType.DAILY,
                 "check_type": "watering",
                 "initial_delay_days": 0
             },
             {
-                "title": f"Check {plant_type} for pests",
-                "description": f"Inspect leaves and stems for signs of pest damage",
+                "title": f"Check {crop_name} for pests",
+                "description": f"Inspect leaves and stems for signs of pest damage or infestation",
                 "frequency": FrequencyType.WEEKLY,
                 "check_type": "pest_check",
+                "initial_delay_days": 2
+            },
+            {
+                "title": f"Inspect {crop_name} for diseases",
+                "description": f"Look for discoloration, spots, wilting or unusual growth. Use Plant Doctor to scan suspicious leaves!",
+                "frequency": FrequencyType.WEEKLY,
+                "check_type": "disease_check",
                 "initial_delay_days": 3
             },
             {
-                "title": f"Check {plant_type} for diseases",
-                "description": f"Look for discoloration, spots, or unusual growth patterns",
-                "frequency": FrequencyType.WEEKLY,
-                "check_type": "disease_check",
-                "initial_delay_days": 4
-            },
-            {
-                "title": f"Fertilize {plant_type}",
+                "title": f"Fertilize {crop_name}",
                 "description": f"Apply balanced fertilizer to support healthy growth",
                 "frequency": FrequencyType.BIWEEKLY,
                 "check_type": "fertilizing",
@@ -271,42 +261,76 @@ class RoutineCheckService:
             }
         ]
         
-        # Plant-specific checks
-        if "tomato" in plant_type_lower:
+        # Crop-specific checks
+        if crop_type == CropType.TOMATO:
             common_checks.extend([
                 {
                     "title": "Prune tomato suckers",
-                    "description": "Remove suckers growing between main stem and branches",
+                    "description": "Remove suckers growing between main stem and branches for better fruit production",
                     "frequency": FrequencyType.WEEKLY,
                     "check_type": "pruning",
                     "initial_delay_days": 14
                 },
                 {
-                    "title": "Check tomato support",
-                    "description": "Ensure stakes/cages are secure as plant grows",
+                    "title": "Check tomato stakes/cages",
+                    "description": "Ensure support structures are secure as plants grow taller",
                     "frequency": FrequencyType.WEEKLY,
                     "check_type": "general",
                     "initial_delay_days": 7
+                },
+                {
+                    "title": "Remove lower tomato leaves",
+                    "description": "Remove leaves touching soil to prevent soil-borne diseases",
+                    "frequency": FrequencyType.BIWEEKLY,
+                    "check_type": "pruning",
+                    "initial_delay_days": 21
                 }
             ])
-        elif "potato" in plant_type_lower:
-            common_checks.append({
-                "title": "Hill potato soil",
-                "description": "Add soil around stems to encourage tuber development",
-                "frequency": FrequencyType.BIWEEKLY,
-                "check_type": "general",
-                "initial_delay_days": 14
-            })
-        elif "pepper" in plant_type_lower:
-            common_checks.append({
-                "title": "Support pepper plants",
-                "description": "Check if plants need staking as fruit develops",
-                "frequency": FrequencyType.WEEKLY,
-                "check_type": "general",
-                "initial_delay_days": 21
-            })
+        elif crop_type == CropType.POTATO:
+            common_checks.extend([
+                {
+                    "title": "Hill potato soil",
+                    "description": "Add soil around stems to encourage more tuber development and prevent greening",
+                    "frequency": FrequencyType.BIWEEKLY,
+                    "check_type": "soil_check",
+                    "initial_delay_days": 14
+                },
+                {
+                    "title": "Check for potato beetles",
+                    "description": "Look for Colorado potato beetles and their larvae on leaves",
+                    "frequency": FrequencyType.WEEKLY,
+                    "check_type": "pest_check",
+                    "initial_delay_days": 5
+                }
+            ])
+        elif crop_type == CropType.PEPPER:
+            common_checks.extend([
+                {
+                    "title": "Support pepper plants",
+                    "description": "Stake plants if needed as fruit develops to prevent breaking",
+                    "frequency": FrequencyType.WEEKLY,
+                    "check_type": "general",
+                    "initial_delay_days": 21
+                },
+                {
+                    "title": "Check pepper for aphids",
+                    "description": "Inspect undersides of leaves for aphid colonies",
+                    "frequency": FrequencyType.WEEKLY,
+                    "check_type": "pest_check",
+                    "initial_delay_days": 5
+                }
+            ])
         
         return common_checks
+    
+    def delete_checks_for_crop(self, user_id: int, crop_type: CropType) -> int:
+        """Delete all routine checks for a specific crop type when user removes it from farm"""
+        deleted = self.db.query(RoutineCheck).filter(
+            RoutineCheck.user_id == user_id,
+            RoutineCheck.crop_type == crop_type
+        ).delete()
+        self.db.commit()
+        return deleted
 
 
 def get_routine_service(db: Session) -> RoutineCheckService:

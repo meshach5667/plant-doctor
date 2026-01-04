@@ -3,14 +3,12 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
 import uuid
-from datetime import datetime
 
 from database import get_db
 from schemas import (
     DiagnosisResponse, 
     PredictionResponse, 
-    DiagnosisHistory,
-    DiagnosisCreate
+    DiagnosisHistory
 )
 from routes.dependencies import get_current_user, get_current_user_optional
 from models import User, Diagnosis
@@ -28,16 +26,19 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @router.post("/predict", response_model=PredictionResponse)
 async def predict_disease(
     image: UploadFile = File(..., description="Plant leaf image for diagnosis"),
-    plant_id: Optional[int] = None,
     current_user: User = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """
-    Upload a plant image and get disease diagnosis.
+    🔍 Upload a plant image and get instant AI diagnosis!
     
-    This endpoint accepts an image of a plant leaf and uses AI to diagnose
-    potential diseases. Returns the disease name, confidence level, and
-    treatment recommendations.
+    Simply take a picture of your plant leaf and our AI will:
+    - Detect what crop it is (tomato, potato, or pepper)
+    - Diagnose any diseases
+    - Provide treatment recommendations
+    - Give prevention tips
+    
+    Works without login for quick checks, but login to save your diagnosis history.
     """
     # Validate file type
     if not image.content_type.startswith("image/"):
@@ -81,8 +82,8 @@ async def predict_disease(
             treatment=diagnosis_result.treatment,
             prevention=diagnosis_result.prevention,
             is_healthy=diagnosis_result.is_healthy,
-            user_id=current_user.id,
-            plant_id=plant_id
+            detected_crop=diagnosis_result.detected_crop,
+            user_id=current_user.id
         )
         db.add(db_diagnosis)
         db.commit()

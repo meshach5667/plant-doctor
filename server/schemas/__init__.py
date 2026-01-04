@@ -9,15 +9,14 @@ from schemas.user import (
 )
 
 from schemas.plant import (
-    PlantBase,
-    PlantCreate,
-    PlantUpdate,
-    PlantResponse
+    CropType,
+    FarmCropCreate,
+    FarmCropUpdate,
+    FarmCropResponse,
+    FarmSummary
 )
 
 from schemas.diagnosis import (
-    DiagnosisBase,
-    DiagnosisCreate,
     DiagnosisResult,
     DiagnosisResponse,
     PredictionResponse,
@@ -45,14 +44,13 @@ __all__ = [
     "UserLogin",
     "Token",
     "TokenData",
-    # Plant schemas
-    "PlantBase",
-    "PlantCreate",
-    "PlantUpdate",
-    "PlantResponse",
+    # Farm crop schemas
+    "CropType",
+    "FarmCropCreate",
+    "FarmCropUpdate",
+    "FarmCropResponse",
+    "FarmSummary",
     # Diagnosis schemas
-    "DiagnosisBase",
-    "DiagnosisCreate",
     "DiagnosisResult",
     "DiagnosisResponse",
     "PredictionResponse",

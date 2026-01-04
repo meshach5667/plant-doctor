@@ -3,19 +3,12 @@ from typing import Optional, List
 from datetime import datetime
 
 
-class DiagnosisBase(BaseModel):
-    plant_id: Optional[int] = None
-
-
-class DiagnosisCreate(DiagnosisBase):
-    pass
-
-
 class DiagnosisResult(BaseModel):
     """Result from AI model prediction"""
     disease_name: str
     confidence: float = Field(..., ge=0, le=1)
     is_healthy: bool
+    detected_crop: str  # What crop type was detected (tomato, potato, pepper)
     description: Optional[str] = None
     treatment: Optional[str] = None
     prevention: Optional[str] = None
@@ -27,11 +20,11 @@ class DiagnosisResponse(BaseModel):
     disease_name: str
     confidence: float
     is_healthy: bool
+    detected_crop: Optional[str] = None
     description: Optional[str] = None
     treatment: Optional[str] = None
     prevention: Optional[str] = None
-    user_id: int
-    plant_id: Optional[int] = None
+    user_id: Optional[int] = None
     created_at: datetime
     
     class Config:

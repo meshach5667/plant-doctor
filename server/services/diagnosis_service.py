@@ -116,17 +116,32 @@ class DiagnosisService:
         # Get disease information
         disease_info = get_disease_info(class_name)
         
+        # Detect crop type from class name
+        detected_crop = self._get_crop_from_class(class_name)
+        
         # Create diagnosis result
         result = DiagnosisResult(
             disease_name=disease_info["disease_name"],
             confidence=confidence,
             is_healthy=disease_info["is_healthy"],
+            detected_crop=detected_crop,
             description=disease_info["description"],
             treatment=disease_info["treatment"],
             prevention=disease_info["prevention"]
         )
         
         return result
+    
+    def _get_crop_from_class(self, class_name: str) -> str:
+        """Extract crop type from class name"""
+        class_lower = class_name.lower()
+        if class_lower.startswith("tomato"):
+            return "tomato"
+        elif class_lower.startswith("potato"):
+            return "potato"
+        elif class_lower.startswith("pepper"):
+            return "pepper"
+        return "unknown"
     
     def get_recommendations(self, class_name: str) -> list:
         """Get care recommendations for a diagnosis"""

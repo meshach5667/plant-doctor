@@ -6,7 +6,7 @@ import os
 import logging
 from config import get_settings
 from database import init_db
-from routes import auth_router, plants_router, diagnosis_router, routines_router
+from routes import auth_router, farm_router, diagnosis_router, routines_router
 
 # Configure logging
 logging.basicConfig(
@@ -38,31 +38,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="""
-    🌱 Plant Doctor API - Your AI-powered plant health assistant!
-    
-    ## Features
-    
-    * **🔍 Disease Diagnosis** - Upload plant images for AI-powered disease detection
-    * **💊 Treatment Recommendations** - Get detailed treatment and prevention tips
-    * **📅 Routine Checks** - Set up daily/weekly maintenance reminders
-    * **🌿 Plant Management** - Track all your plants in one place
-    
-    ## How it works
-    
-    1. Register an account or use the diagnosis endpoint without auth for quick checks
-    2. Upload a photo of your plant leaf
-    3. Get instant AI diagnosis with confidence score
-    4. Follow treatment recommendations
-    5. Set up routine checks for ongoing plant care
-    
-    ## Supported Plants
-    
-    Currently supports diagnosis for:
-    - 🍅 Tomato
-    - 🥔 Potato  
-    - 🌶️ Pepper (Bell)
-    """,
     version=settings.APP_VERSION,
     lifespan=lifespan,
     docs_url="/docs",
@@ -85,25 +60,18 @@ app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # Include routers
 app.include_router(auth_router, prefix="/api/v1")
-app.include_router(plants_router, prefix="/api/v1")
+app.include_router(farm_router, prefix="/api/v1")
 app.include_router(diagnosis_router, prefix="/api/v1")
 app.include_router(routines_router, prefix="/api/v1")
 
 
 @app.get("/", tags=["Root"])
 async def root():
-    """Root endpoint with API information"""
     return {
-        "message": "Welcome to Plant Doctor API 🌱",
-        "version": settings.APP_VERSION,
-        "docs": "/docs",
-        "endpoints": {
-            "auth": "/api/v1/auth",
-            "plants": "/api/v1/plants",
-            "diagnosis": "/api/v1/diagnosis",
-            "routines": "/api/v1/routines"
+        "message": "Hello, i am Plant Doctor ",
+    
         }
-    }
+    
 
 
 @app.get("/health", tags=["Health"])
