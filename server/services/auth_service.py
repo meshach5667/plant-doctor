@@ -4,12 +4,18 @@ from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+import logging
 
 from models import User
 from schemas import UserCreate, Token
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
+
+# bcrypt has a 72-byte input limit; enforce truncation to avoid backend errors
+BCRYPT_MAX_BYTES = 72
+
+logger = logging.getLogger(__name__)
 
 # JWT settings
 SECRET_KEY = "your-secret-key-change-in-production"  # Change this in production!
@@ -25,11 +31,30 @@ class AuthService:
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
-        return pwd_context.verify(plain_password, hashed_password)
+        truncated = self._truncate_password(plain_password)
+        return pwd_context.verify(truncated, hashed_password)
     
     def get_password_hash(self, password: str) -> str:
         """Hash a password"""
-        return pwd_context.hash(password)
+        truncated = self._truncate_password(password)
+        return pwd_context.hash(truncated)
+
+    def _truncate_password(self, password: str) -> str:
+        """Truncate a password so its UTF-8 encoding is at most BCRYPT_MAX_BYTES.
+
+        This preserves valid UTF-8 by decoding with 'ignore' if the slice cuts
+        through a multi-byte character.
+        """
+        if not isinstance(password, str):
+            password = str(password)
+
+        b = password.encode("utf-8")
+        if len(b) <= BCRYPT_MAX_BYTES:
+            return password
+
+        truncated = b[:BCRYPT_MAX_BYTES].decode("utf-8", "ignore")
+        logger.warning("Password exceeds bcrypt 72-byte limit; truncating before hashing/verification.")
+        return truncated
     
     def create_access_token(
         self, 
