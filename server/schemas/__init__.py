@@ -1,11 +1,15 @@
+"""
+Pydantic schemas for request/response validation.
+"""
 from schemas.user import (
-    UserBase,
     UserCreate,
     UserUpdate,
     UserResponse,
     UserLogin,
     Token,
-    TokenData
+    TokenResponse,
+    TokenRefresh,
+    PasswordChange,
 )
 
 from schemas.plant import (
@@ -37,13 +41,14 @@ from schemas.routine import (
 
 __all__ = [
     # User schemas
-    "UserBase",
     "UserCreate", 
     "UserUpdate",
     "UserResponse",
     "UserLogin",
     "Token",
-    "TokenData",
+    "TokenResponse",
+    "TokenRefresh",
+    "PasswordChange",
     # Farm crop schemas
     "CropType",
     "FarmCropCreate",

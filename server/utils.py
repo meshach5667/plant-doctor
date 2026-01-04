@@ -39,8 +39,6 @@ def convert_model_to_tflite(
     if quantize:
         # Apply post-training quantization for smaller model size
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        # Optional: Full integer quantization for even smaller size
-        # converter.target_spec.supported_types = [tf.int8]
     
     # Convert the model
     tflite_model = converter.convert()
@@ -54,29 +52,6 @@ def convert_model_to_tflite(
     print(f"TFLite model size: {os.path.getsize(output_path) / 1024 / 1024:.2f} MB")
     
     return output_path
-
-
-def validate_image_file(filename: str) -> bool:
-    """Check if file has valid image extension"""
-    valid_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
-    ext = os.path.splitext(filename)[1].lower()
-    return ext in valid_extensions
-
-
-def get_plant_type_from_class(class_name: str) -> str:
-    """Extract plant type from class name"""
-    if class_name.startswith("Tomato"):
-        return "Tomato"
-    elif class_name.startswith("Potato"):
-        return "Potato"
-    elif class_name.startswith("Pepper"):
-        return "Pepper"
-    return "Unknown"
-
-
-def format_confidence(confidence: float) -> str:
-    """Format confidence score as percentage"""
-    return f"{confidence * 100:.1f}%"
 
 
 if __name__ == "__main__":

@@ -1,3 +1,60 @@
+# Virtual Environment
 /pd-venv
+venv/
+.venv/
+
+# Dataset (large files)
 /PlantVillage
+
+# OS Files
+.DS_Store
 .Ds_Store
+Thumbs.db
+
+# Environment Variables (NEVER commit secrets!)
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Uploads (user content)
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Model files (too large for git)
+*.h5
+*.tflite
+*.pb
+*.ckpt*
+
+# Jupyter
+.ipynb_checkpoints/
