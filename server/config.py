@@ -108,6 +108,16 @@ class Settings(BaseSettings):
             raise ValueError("SECRET_KEY must be at least 32 characters long")
         return v
     
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production environment."""
+        return self.ENVIRONMENT == "production"
+    
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development environment."""
+        return self.ENVIRONMENT == "development"
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

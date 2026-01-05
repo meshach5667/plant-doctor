@@ -1,8 +1,11 @@
 """
-Utility functions for Plant Doctor API
+Utility scripts for Plant Doctor API.
+
+This module contains standalone utility functions that can be run
+directly from the command line.
 """
-import tensorflow as tf
 import os
+import tensorflow as tf
 from config import get_settings
 
 settings = get_settings()
@@ -15,6 +18,8 @@ def convert_model_to_tflite(
 ) -> str:
     """
     Convert Keras H5 model to TFLite format for mobile/offline usage.
+    
+    Run directly: python utils.py
     
     Args:
         h5_model_path: Path to the H5 model file (default: from settings)
@@ -37,7 +42,6 @@ def convert_model_to_tflite(
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     
     if quantize:
-        # Apply post-training quantization for smaller model size
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
     
     # Convert the model
@@ -47,18 +51,23 @@ def convert_model_to_tflite(
     with open(output_path, 'wb') as f:
         f.write(tflite_model)
     
+    original_size = os.path.getsize(h5_model_path) / 1024 / 1024
+    tflite_size = os.path.getsize(output_path) / 1024 / 1024
+    
     print(f"TFLite model saved to: {output_path}")
-    print(f"Original model size: {os.path.getsize(h5_model_path) / 1024 / 1024:.2f} MB")
-    print(f"TFLite model size: {os.path.getsize(output_path) / 1024 / 1024:.2f} MB")
+    print(f"Original model size: {original_size:.2f} MB")
+    print(f"TFLite model size: {tflite_size:.2f} MB")
+    print(f"Size reduction: {(1 - tflite_size/original_size) * 100:.1f}%")
     
     return output_path
 
 
 if __name__ == "__main__":
-    # Run model conversion when executed directly
     print("Converting model to TFLite format...")
     try:
         convert_model_to_tflite()
         print("Conversion successful!")
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
     except Exception as e:
         print(f"Conversion failed: {e}")

@@ -2,6 +2,7 @@
 Pydantic schemas for request/response validation.
 """
 from schemas.user import (
+    UserBase,
     UserCreate,
     UserUpdate,
     UserResponse,
@@ -41,6 +42,7 @@ from schemas.routine import (
 
 __all__ = [
     # User schemas
+    "UserBase",
     "UserCreate", 
     "UserUpdate",
     "UserResponse",

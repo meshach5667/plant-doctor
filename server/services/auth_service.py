@@ -18,7 +18,6 @@ from core.security import (
 from core.exceptions import (
     AuthenticationException,
     ConflictException,
-    NotFoundException,
 )
 
 logger = logging.getLogger(__name__)

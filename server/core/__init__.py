@@ -13,7 +13,12 @@ from core.security import (
 from core.exceptions import (
     AppException,
     AuthenticationException,
+    AuthorizationException,
+    NotFoundException,
+    ValidationException,
     ConflictException,
+    RateLimitException,
+    ServiceUnavailableException,
 )
 from core.middleware import (
     RequestLoggingMiddleware,
@@ -33,7 +38,12 @@ __all__ = [
     # Exceptions
     "AppException",
     "AuthenticationException",
+    "AuthorizationException",
+    "NotFoundException",
+    "ValidationException",
     "ConflictException",
+    "RateLimitException",
+    "ServiceUnavailableException",
     # Middleware
     "RequestLoggingMiddleware",
     "RateLimitMiddleware",
