@@ -77,25 +77,6 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI application
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
-    description="""
-    🌱 **Plant Doctor API** - AI-Powered Plant Disease Diagnosis
-    
-    This API provides:
-    - **Disease Diagnosis**: Upload plant images for instant AI-powered diagnosis
-    - **Treatment Recommendations**: Get expert treatment advice for detected diseases
-    - **Farm Management**: Track your crops and their health status
-    - **Routine Checks**: Set up automated care reminders for your plants
-    
-    ## Authentication
-    Most endpoints require JWT Bearer token authentication.
-    Obtain a token via the `/api/v1/auth/login` endpoint.
-    """,
-    lifespan=lifespan,
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
-    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 # Register exception handlers
