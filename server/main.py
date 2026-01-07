@@ -1,8 +1,3 @@
-"""
-Plant Doctor API - Main Application Entry Point
-
-A production-ready FastAPI application for plant disease diagnosis.
-"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -126,43 +121,33 @@ app.include_router(routines_router, prefix=API_V1_PREFIX)
 
 @app.get("/", tags=["Root"])
 async def root():
-    """
-    Root endpoint - API information.
-    """
+
     return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "status": "running",
-        "docs": "/docs" if settings.DEBUG else "disabled",
+        "Message":"Hi, i am Plant Doctor, built by Mesh "
+
     }
 
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """
-    Health check endpoint for monitoring and load balancers.
-    
-    Returns the current health status of the API and its dependencies.
-    """
+ 
     from services import diagnosis_service
     
     return {
-        "status": "healthy",
-        "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT,
+        "status":"I am very healthy because i was built by Mesh",
         "model_loaded": diagnosis_service.is_model_loaded,
     }
 
 
 # Run with uvicorn when executed directly
-if __name__ == "__main__":
-    import uvicorn
+# if __name__ == "__main__":
+#     import uvicorn
     
-    uvicorn.run(
-        "main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG,
-        workers=1 if settings.DEBUG else settings.WORKERS,
-        log_level="debug" if settings.DEBUG else "info",
-    )
+#     uvicorn.run(
+#         "main:app",
+#         host=settings.HOST,
+#         port=settings.PORT,
+#         reload=settings.DEBUG,
+#         workers=1 if settings.DEBUG else settings.WORKERS,
+#         log_level="debug" if settings.DEBUG else "info",
+#     )
