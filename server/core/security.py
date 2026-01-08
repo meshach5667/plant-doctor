@@ -132,16 +132,7 @@ def create_refresh_token(
     subject: str | int,
     expires_delta: Optional[timedelta] = None
 ) -> str:
-    """
-    Create a JWT refresh token.
-    
-    Args:
-        subject: The subject claim (typically user_id)
-        expires_delta: Optional custom expiration time
-        
-    Returns:
-        Encoded JWT refresh token string
-    """
+
     now = datetime.now(timezone.utc)
     
     if expires_delta:
