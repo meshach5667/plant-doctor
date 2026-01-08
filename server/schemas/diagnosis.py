@@ -8,7 +8,7 @@ class DiagnosisResult(BaseModel):
     disease_name: str
     confidence: float = Field(..., ge=0, le=1)
     is_healthy: bool
-    detected_crop: str  # What crop type was detected (tomato, potato, pepper)
+    detected_crop: str  
     description: Optional[str] = None
     treatment: Optional[str] = None
     prevention: Optional[str] = None
