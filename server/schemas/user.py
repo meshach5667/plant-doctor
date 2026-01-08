@@ -1,6 +1,3 @@
-"""
-User-related Pydantic schemas for request/response validation.
-"""
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
