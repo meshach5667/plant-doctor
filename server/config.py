@@ -70,27 +70,29 @@ class Settings(BaseSettings):
         default_factory=lambda: os.path.join(os.path.dirname(__file__), "model", "plantDoctor.tflite")
     )
     
-    # Image settings
-    IMAGE_SIZE: Tuple[int, int] = (256, 256)
+    # Image settings - must match model input shape (224x224 for plantDoctor.h5)
+    IMAGE_SIZE: Tuple[int, int] = (224, 224)
     MAX_IMAGE_SIZE_MB: int = Field(default=10, description="Maximum upload image size in MB")
     
     # Class names for prediction (based on PlantVillage dataset)
+    # NOTE: Must be in sorted order to match how TensorFlow loads the dataset
     CLASS_NAMES: List[str] = [
         "Pepper__bell___Bacterial_spot",
         "Pepper__bell___healthy",
+        "PlantVillage",  # Nested folder that was included in training
         "Potato___Early_blight",
-        "Potato___healthy",
         "Potato___Late_blight",
-        "Tomato__Target_Spot",
-        "Tomato__Tomato_mosaic_virus",
-        "Tomato__Tomato_YellowLeaf__Curl_Virus",
+        "Potato___healthy",
         "Tomato_Bacterial_spot",
         "Tomato_Early_blight",
-        "Tomato_healthy",
         "Tomato_Late_blight",
         "Tomato_Leaf_Mold",
         "Tomato_Septoria_leaf_spot",
-        "Tomato_Spider_mites_Two_spotted_spider_mite"
+        "Tomato_Spider_mites_Two_spotted_spider_mite",
+        "Tomato__Target_Spot",
+        "Tomato__Tomato_YellowLeaf__Curl_Virus",
+        "Tomato__Tomato_mosaic_virus",
+        "Tomato_healthy",
     ]
     
     @field_validator("ENVIRONMENT")

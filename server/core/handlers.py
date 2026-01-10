@@ -38,29 +38,46 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request, 
         exc: RequestValidationError
     ) -> JSONResponse:
-        """Handle Pydantic validation errors."""
+        """Handle Pydantic validation errors with detailed messages."""
         errors = []
         for error in exc.errors():
+            # Build field path, filtering out 'body' prefix for cleaner messages
+            field_parts = [str(loc) for loc in error["loc"] if loc != "body"]
+            field = ".".join(field_parts) if field_parts else "request"
+            
+            # Clean up the error message
+            msg = error["msg"]
+            # Remove "Value error, " prefix if present
+            if msg.startswith("Value error, "):
+                msg = msg[13:]
+            
             errors.append({
-                "field": ".".join(str(loc) for loc in error["loc"]),
-                "message": error["msg"],
+                "field": field,
+                "message": msg,
                 "type": error["type"]
             })
         
+        # Log with details for debugging
         logger.warning(
-            f"Validation error on {request.url.path}",
+            f"Validation error on {request.url.path}: {errors}",
             extra={
                 "request_id": getattr(request.state, "request_id", "unknown"),
                 "errors": errors
             }
         )
         
+        # Build user-friendly error message
+        if len(errors) == 1:
+            detail_msg = f"Validation failed: {errors[0]['message']}"
+        else:
+            detail_msg = f"Validation failed with {len(errors)} errors"
+        
         return JSONResponse(
             status_code=422,
             content={
                 "error": {
                     "code": "VALIDATION_ERROR",
-                    "message": "Request validation failed",
+                    "message": detail_msg,
                     "details": {"errors": errors}
                 }
             }
