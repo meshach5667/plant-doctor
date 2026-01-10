@@ -118,10 +118,7 @@ class DiagnosisService:
             DiagnosisService._load_error = error_msg
     
     def _rebuild_and_load_weights(self, model_path: str):
-        """Rebuild model architecture and load weights from h5 file"""
-        # Build the same architecture as in train.ipynb
-        # Note: The model has 16 output classes (from CLASS_NAMES in config)
-        # but let's check the actual output from the saved model
+        
         num_classes = len(settings.CLASS_NAMES)
         IMAGE_SIZE = 224
         CHANNELS = 3
